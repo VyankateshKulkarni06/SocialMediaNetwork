@@ -1,0 +1,35 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Alice",
+      "email": "alice@test.com",
+      "bio": "Engineer"
+    },
+    {
+      "id": 2,
+      "name": "Bob",
+      "email": "bob@test.com",
+      "bio": "Developer"
+    },
+    {
+      "id": 3,
+      "name": "Charlie",
+      "email": "charlie@test.com",
+      "bio": "ML Researcher"
+    },
+    {
+      "id": 4,
+      "name": "David",
+      "email": "david@test.com",
+      "bio": "Backend Dev"
+    }
+  ],
+  "connections": [
+    { "from_user_id": 1, "to_user_id": 2 },
+    { "from_user_id": 2, "to_user_id": 3 },
+    { "from_user_id": 3, "to_user_id": 4 },
+    { "from_user_id": 1, "to_user_id": 4 },
+    { "from_user_id": 4, "to_user_id": 2 }
+  ]
+}
