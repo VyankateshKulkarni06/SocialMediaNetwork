@@ -149,90 +149,101 @@ func (g *Graph) ShortestPath(src, dest int) []int {
 	return nil
 }
 
-func (g *Graph) ConnectionsWithinDepth(userID int, depth int) []int {
-	g.mu.RLock()
-	defer g.mu.RUnlock()
+	func (g *Graph) ConnectionsWithinDepth(userID int, depth int) []int {
+		g.mu.RLock()
+		defer g.mu.RUnlock()
 
-	type nodeDepth struct {
-		node  int
-		depth int
-	}
-
-	visited := make(map[int]bool)
-	queue := []nodeDepth{{userID, 0}}
-	visited[userID] = true
-
-	result := []int{}
-
-	for len(queue) > 0 {
-		current := queue[0]
-		queue = queue[1:]
-
-		if current.depth == depth {
-			continue
+		type nodeDepth struct {
+			node  int
+			depth int
 		}
 
-		for _, neighbor := range g.AdjList[current.node] {
-			if !visited[neighbor] {
-				visited[neighbor] = true
-				result = append(result, neighbor)
-				queue = append(queue, nodeDepth{neighbor, current.depth + 1})
+		visited := make(map[int]bool)
+		queue := []nodeDepth{{userID, 0}}
+		visited[userID] = true
+
+		result := []int{}
+
+		for len(queue) > 0 {
+			current := queue[0]
+			queue = queue[1:]
+
+			if current.depth == depth {
+				continue
+			}
+
+			for _, neighbor := range g.AdjList[current.node] {
+				if !visited[neighbor] {
+					visited[neighbor] = true
+					result = append(result, neighbor)
+					queue = append(queue, nodeDepth{neighbor, current.depth + 1})
+				}
 			}
 		}
+
+		return result
 	}
 
-	return result
-}
+	func (g *Graph) TopInfluencers(limit int) []int {
+		g.mu.RLock()
+		defer g.mu.RUnlock()
 
-func (g *Graph) TopInfluencers(limit int) []int {
-	g.mu.RLock()
-	defer g.mu.RUnlock()
+		inDegreeMap := make(map[int]int)
 
-	inDegreeMap := make(map[int]int)
-
-	// Initialize
-	for id := range g.AdjList {
-		inDegreeMap[id] = 0
-	}
-
-	// Count inbound edges
-	for _, neighbors := range g.AdjList {
-		for _, neighbor := range neighbors {
-			inDegreeMap[neighbor]++
+		// Initialize
+		for id := range g.AdjList {
+			inDegreeMap[id] = 0
 		}
+
+		// Count inbound edges
+		for _, neighbors := range g.AdjList {
+			for _, neighbor := range neighbors {
+				inDegreeMap[neighbor]++
+			}
+		}
+
+		type userScore struct {
+			id    int
+			score int
+		}
+
+		var scores []userScore
+		for id, score := range inDegreeMap {
+			scores = append(scores, userScore{id, score})
+		}
+
+		sort.Slice(scores, func(i, j int) bool {
+			return scores[i].score > scores[j].score
+		})
+
+		if limit > len(scores) {
+			limit = len(scores)
+		}
+
+		result := make([]int, limit)
+		for i := 0; i < limit; i++ {
+			result[i] = scores[i].id
+		}
+
+		return result
 	}
-
-	type userScore struct {
-		id    int
-		score int
-	}
-
-	var scores []userScore
-	for id, score := range inDegreeMap {
-		scores = append(scores, userScore{id, score})
-	}
-
-	sort.Slice(scores, func(i, j int) bool {
-		return scores[i].score > scores[j].score
-	})
-
-	if limit > len(scores) {
-		limit = len(scores)
-	}
-
-	result := make([]int, limit)
-	for i := 0; i < limit; i++ {
-		result[i] = scores[i].id
-	}
-
-	return result
-}
 
 func (g *Graph) dfs(node int, visited map[int]bool) {
 	visited[node] = true
+
+	// outgoing edges
 	for _, neighbor := range g.AdjList[node] {
 		if !visited[neighbor] {
 			g.dfs(neighbor, visited)
+		}
+	}
+
+	// incoming edges
+	for other, neighbors := range g.AdjList {
+		for _, neighbor := range neighbors {
+			if neighbor == node && !visited[other] {
+				g.dfs(other, visited)
+			}
 		}
 	}
 }

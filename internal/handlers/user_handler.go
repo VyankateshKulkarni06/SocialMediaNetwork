@@ -13,7 +13,6 @@ type UserHandler struct {
 	Graph *graph.Graph
 }
 
-
 type CreateUserRequest struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
@@ -51,8 +50,8 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		Scan(&id, &createdAt)
 
 	if err != nil {
-		http.Error(w, "Database error", http.StatusInternalServerError)
-	return
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	h.Graph.AddNode(int(id))
@@ -71,9 +70,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 
-
 type BulkUser struct {
-	ID    int64  `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	Bio   string `json:"bio"`
@@ -116,10 +113,13 @@ func (h *UserHandler) BulkImport(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		_, err := tx.Exec(`
-			INSERT INTO users (id, name, email, bio)
-			VALUES ($1, $2, $3, $4)
-		`, user.ID, user.Name, user.Email, user.Bio)
+		var generatedID int64
+
+		err := tx.QueryRow(`
+			INSERT INTO users (name, email, bio)
+			VALUES ($1, $2, $3)
+			RETURNING id
+		`, user.Name, user.Email, user.Bio).Scan(&generatedID)
 
 		if err != nil {
 			tx.Rollback()
